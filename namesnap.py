@@ -1,40 +1,36 @@
 import streamlit as st
-import random
+import openai
 
+# Use secret key stored in Streamlit
+openai.api_key = st.secrets["OPENAI_API_KEY"]
+
+# --- Streamlit App Layout ---
 st.set_page_config(page_title="NameSnap", layout="centered")
+st.title("🧠 NameSnap")
+st.caption("AI-powered brand name & description generator")
 
-st.title("🔤 NameSnap")
-st.caption("Snap fast, fresh brand names + SEO-style product descriptions.")
+keyword = st.text_input("Enter a product keyword or niche (e.g. beauty, fitness, pets):")
 
-st.markdown("---")
+if st.button("Generate"):
+    if keyword.strip() == "":
+        st.warning("Please enter a keyword.")
+    else:
+        with st.spinner("Thinking..."):
+            prompt = f"Generate 3 creative, brandable product names and one short product description for a business in the '{keyword}' niche. Make them catchy and market-ready."
 
-keyword = st.text_input("Enter a product keyword or niche:")
-
-brand_starters = ["Snap", "Spark", "Go", "Nova", "Peak", "Core", "Glow", "Next"]
-brand_endings = ["Lab", "Nest", "Works", "Co", "Wave", "Vibe", "Boost", "Zone"]
-
-def generate_names(kw):
-    kw_cap = kw.capitalize()
-    return [
-        f"{random.choice(brand_starters)}{kw_cap}",
-        f"{kw_cap}{random.choice(brand_endings)}",
-        f"{random.choice(brand_starters)}{random.choice(brand_endings)}"
-    ]
-
-def generate_description(kw):
-    templates = [
-        f"{kw.capitalize()} is changing the game — perfect for creators, entrepreneurs, and anyone looking to grow online.",
-        f"Looking for an edge in the {kw} space? This product delivers clarity, style, and impact.",
-        f"Whether you're just starting or scaling, {kw.capitalize()} gives your brand the professional feel it deserves.",
-        f"The perfect name for your {kw} brand — stand out with confidence and style.",
-    ]
-    return random.choice(templates)
-
-if keyword:
-    st.markdown("### 💡 Brand Name Suggestions:")
-    for name in generate_names(keyword):
-        st.success(name)
-
-    st.markdown("### 📝 SEO Product Description:")
-    st.info(generate_description(keyword))
+            try:
+                response = openai.ChatCompletion.create(
+                    model="gpt-3.5-turbo",
+                    messages=[
+                        {"role": "system", "content": "You are a creative branding assistant."},
+                        {"role": "user", "content": prompt}
+                    ],
+                    temperature=0.8,
+                    max_tokens=300
+                )
+                output = response['choices'][0]['message']['content']
+                st.success("Done!")
+                st.write(output)
+            except Exception as e:
+                st.error(f"Something went wrong: {e}")
 
